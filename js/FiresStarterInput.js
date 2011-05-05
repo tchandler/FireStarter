@@ -11,26 +11,19 @@ function FireStarterInput(fsObj) {
 };
 
 FireStarterInput.prototype = {
-	createFire: function(block) {
-		block.changeState(BlockStates.fire);
-	},
-	removeFire: function(block) {
-		block.changeState(BlockStates.empty);
-	},
-	processInputQueue: function() {
+	update: function() {
 		for(var q in this.inputQueue) {
-			q.callback(q.arg);
+			this.inputQueue[q].callback.call(this.inputQueue[q].scope, this.inputQueue[q].arg);
 		}
 		this.inputQueue = [];
 	},
 	onMouseClick: function(e) {
 		if(e !== undefined) {
 			var block = this.getClickedBlock(e);	
-			if(block.state === BlockStates.flammable) {
-				this.createFire(block);
-			} else {
-				this.removeFire(block);
-			}
+			this.inputQueue.push( {
+				callback: block.clicked,
+				arg: null,
+				scope: block }	);
 		}
 	},
 	getClickedBlock: function(e) {

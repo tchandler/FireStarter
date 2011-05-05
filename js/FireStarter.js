@@ -109,6 +109,7 @@ FireStarter.prototype = {
 	
 	update: function() {
 		//read input
+		this.inputHandler.update();
 		this.updateGrid();
 	},
 	

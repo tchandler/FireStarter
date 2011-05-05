@@ -63,6 +63,11 @@ FireStarterBlock.prototype = {
 				this.changeState(BlockStates.empty);
 			}
 		}
+	},
+	
+	clicked: function() {
+		if(this.state === BlockStates.fire) this.changeState(BlockStates.empty);
+		if(this.state === BlockStates.flammable) this.changeState(BlockStates.fire);
 	}
 };
 
