@@ -7,8 +7,8 @@ function FireStarter(gridConfig) {
 	if(gridConfig === undefined) {
 		this.gridConfig = {
 			blockSize: {
-				x: 50,
-				y: 50
+				x: 75,
+				y: 75
 			},
 			gridSize: {
 				x: 10,
@@ -28,15 +28,14 @@ function FireStarter(gridConfig) {
 	this.canvas.height = this.canvasSize.y;
 	this.cc = this.canvas.getContext("2d");
 	this.grid = [];
+	this._intervalId;
 };
 
 
 //Definitions
 FireStarter.prototype = {
 	init: function() {
-		this.initGridData();
-		this.drawGrid();
-		
+		this.initGridData();		
 	},
 	
 	initGridData: function() {
@@ -46,14 +45,13 @@ FireStarter.prototype = {
 		for(; x < this.gridConfig.gridSize.x; x += 1) {
 			this.grid[x] = new Array(this.gridConfig.gridSize.y);
 			for(; y < this.gridConfig.gridSize.y; y += 1) {
-				content = (Math.random() > ONE_PIXEL_OFFSET) ? "*" : "";
-				var block = new FireStarterBlock(x, y, content);
+				var block = new FireStarterBlock(x, y);
+				block.changeState(Math.round(Math.random()));
 				block.drawPosition = {
 					x: (x * blockSize.x) + (blockSize.x / 2),
 					y: (y * blockSize.y) + (blockSize.y / 2) 
 				}
 				this.grid[x][y] = block;
-				this.drawBlock(block);
 			}
 			y = 0;
 		}
@@ -65,6 +63,7 @@ FireStarter.prototype = {
 	
 	drawGrid: function() {
 		var top = ONE_PIXEL_OFFSET;
+		var blockSize = this.gridConfig.blockSize;
 		
 		this.cc.beginPath();
 		
@@ -73,18 +72,22 @@ FireStarter.prototype = {
 		this.drawLine(top, this.canvas.height, this.canvas.width, this.canvas.height);
 		this.drawLine(this.canvas.width, this.canvas.height, this.canvas.width, top);
 		this.drawLine(this.canvas.width, top, top, top);
-		
-		
-		for(var x = 0, xCord = x * this.gridConfig.blockSize.x; 
-			x <= this.canvas.width; 
-			x += 1, xCord += this.gridConfig.blockSize.x) {
+				
+		for(var x = 0; x <= this.canvas.width; x += 1) {
+			xCord = x * blockSize.x;
 			this.drawLine(xCord, 0, xCord, this.canvas.height);
 		}
 		
-		for(var y = 0, yCord = y * this.gridConfig.blockSize.y; 
-			y <= this.canvas.height; 
-			y += 1, yCord += this.gridConfig.blockSize.y) {
+		for(var y = 0; y <= this.canvas.height; y += 1) {
+			yCord = y * blockSize.y;
 			this.drawLine(0, yCord, this.canvas.width, yCord);
+		}
+		
+		for(var x in this.grid) {
+			for(var y in this.grid[x]) {
+				this.grid[x][y].changeState(Math.round(Math.random()));
+				this.drawBlock(this.grid[x][y]);
+			}
 		}
 		
 		this.cc.stroke();
@@ -96,4 +99,28 @@ FireStarter.prototype = {
 		this.cc.moveTo(startX, startY);
 		this.cc.lineTo(endX, endY);
 	},
+	
+	draw: function() {
+		this.canvas.width = this.canvas.width;
+		this.drawGrid();
+	},
+	
+	update: function() {
+		
+	},
+	
+	begin: function(fps) {
+		var self = this;
+		if(fps === undefined) {
+			fps = 60;
+		}
+		this._intervalId = setInterval(function() {self.run.call(self)}, (1000/fps));
+	},
+	run: function() {
+		this.update();
+		this.draw();
+	},
+	stop: function() {
+		clearInterval(this._intervalId);
+	}
 };
