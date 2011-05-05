@@ -29,13 +29,15 @@ function FireStarter(gridConfig) {
 	this.cc = this.canvas.getContext("2d");
 	this.grid = [];
 	this._intervalId;
+	this.inputHandler;
 };
 
 
 //Definitions
 FireStarter.prototype = {
 	init: function() {
-		this.initGridData();		
+		this.initGridData();	
+		this.inputHandler = new FireStarterInput(this);
 	},
 	
 	initGridData: function() {
@@ -52,6 +54,7 @@ FireStarter.prototype = {
 					y: (y * blockSize.y) + (blockSize.y / 2) 
 				}
 				this.grid[x][y] = block;
+				block.generateAdjacencyList(this.gridConfig.gridSize.x, this.gridConfig.gridSize.y);
 			}
 			y = 0;
 		}
@@ -85,7 +88,6 @@ FireStarter.prototype = {
 		
 		for(var x in this.grid) {
 			for(var y in this.grid[x]) {
-				this.grid[x][y].changeState(Math.round(Math.random()));
 				this.drawBlock(this.grid[x][y]);
 			}
 		}
@@ -106,7 +108,32 @@ FireStarter.prototype = {
 	},
 	
 	update: function() {
-		
+		//read input
+		this.updateGrid();
+	},
+	
+	updateGrid: function() {
+		for(var x in this.grid) {
+			for(var y in this.grid[x]) {
+				if(this.grid[x][y].state === BlockStates.fire) {
+					this.grid[x][y].update();
+					this.spreadFire(this.grid[x][y]);
+				}
+			}
+		}
+	},
+	
+	spreadFire: function(block) {
+		var rand, isFireGoingToSpread, adjacentBlock;
+		for (var i=0; i < block.adjacencyList.length; i++) {
+			adjacentBlock = this.grid[block.adjacencyList[i].x][block.adjacencyList[i].y];
+			rand = Math.random() * 0.501;
+			isFireGoingToSpread = Boolean(Math.round(rand));
+			if((adjacentBlock.state === BlockStates.flammable) && isFireGoingToSpread) {
+				adjacentBlock.changeState(BlockStates.fire);
+				console.log("burnt: " + isFireGoingToSpread);
+			}
+		}
 	},
 	
 	begin: function(fps) {
@@ -116,10 +143,12 @@ FireStarter.prototype = {
 		}
 		this._intervalId = setInterval(function() {self.run.call(self)}, (1000/fps));
 	},
+	
 	run: function() {
 		this.update();
 		this.draw();
 	},
+	
 	stop: function() {
 		clearInterval(this._intervalId);
 	}
