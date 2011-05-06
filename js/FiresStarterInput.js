@@ -29,14 +29,12 @@ FireStarterInput.prototype = {
 	getClickedBlock: function(e) {
 		var x, y, gridX, gridY;
 	    if (e.pageX || e.pageY) {
-	      x = e.pageX;
-	      y = e.pageY;
+	    	x = e.pageX;
+	    	y = e.pageY;
 	    }
 	    else {
-	      x = e.clientX + document.body.scrollLeft +
-	           document.documentElement.scrollLeft;
-	      y = e.clientY + document.body.scrollTop +
-	           document.documentElement.scrollTop;
+			x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+			y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
 	    }
 	    x -= this.fsObj.canvas.offsetLeft;
 		y -= this.fsObj.canvas.offsetTop;
