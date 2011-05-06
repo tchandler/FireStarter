@@ -7,12 +7,12 @@ function FireStarter(gridConfig) {
 	if(gridConfig === undefined) {
 		this.gridConfig = {
 			blockSize: {
-				x: 75,
-				y: 75
+				x: 40,
+				y: 40
 			},
 			gridSize: {
-				x: 10,
-				y: 10
+				x: 20,
+				y: 20
 			}
 		};
 	}
@@ -47,7 +47,7 @@ FireStarter.prototype = {
 		for(; x < this.gridConfig.gridSize.x; x += 1) {
 			this.grid[x] = new Array(this.gridConfig.gridSize.y);
 			for(; y < this.gridConfig.gridSize.y; y += 1) {
-				var block = new FireStarterBlock(x, y);
+				var block = new FireStarterBlock(x, y, null, this);
 				block.changeState(Math.round(Math.random()));
 				block.drawPosition = {
 					x: (x * blockSize.x) + (blockSize.x / 2),
@@ -61,7 +61,7 @@ FireStarter.prototype = {
 	},
 	
 	drawBlock: function(block) {
-		this.cc.fillText(block.content, block.drawPosition.x, block.drawPosition.y);
+		block.draw(this.cc);
 	},
 	
 	drawGrid: function() {
@@ -85,14 +85,15 @@ FireStarter.prototype = {
 			yCord = y * blockSize.y;
 			this.drawLine(0, yCord, this.canvas.width, yCord);
 		}
-		
+		this.cc.stroke();
+	},
+	
+	drawBlocks: function() {
 		for(var x in this.grid) {
 			for(var y in this.grid[x]) {
 				this.drawBlock(this.grid[x][y]);
 			}
 		}
-		
-		this.cc.stroke();
 	},
 	
 	drawLine: function(startX, startY, endX, endY, strokeStyle) {
@@ -104,7 +105,7 @@ FireStarter.prototype = {
 	
 	draw: function() {
 		this.canvas.width = this.canvas.width;
-		this.drawGrid();
+		this.drawBlocks();
 	},
 	
 	update: function() {
@@ -116,8 +117,8 @@ FireStarter.prototype = {
 	updateGrid: function() {
 		for(var x in this.grid) {
 			for(var y in this.grid[x]) {
-				if(this.grid[x][y].state === BlockStates.fire) {
 					this.grid[x][y].update();
+				if(this.grid[x][y].state === BlockStates.fire) {
 					this.spreadFire(this.grid[x][y]);
 				}
 			}
@@ -130,9 +131,12 @@ FireStarter.prototype = {
 			adjacentBlock = this.grid[block.adjacencyList[i].x][block.adjacencyList[i].y];
 			rand = Math.random() * 0.501;
 			isFireGoingToSpread = Boolean(Math.round(rand));
-			if((adjacentBlock.state === BlockStates.flammable) && isFireGoingToSpread) {
-				adjacentBlock.changeState(BlockStates.fire);
-				console.log("burnt: " + isFireGoingToSpread);
+			if((adjacentBlock.state === BlockStates.flammable)) {
+				adjacentBlock.increaseTemperature(0.7 + rand);
+				if(isFireGoingToSpread) {
+					adjacentBlock.changeState(BlockStates.fire);
+				}
+				
 			}
 		}
 	},
@@ -142,6 +146,7 @@ FireStarter.prototype = {
 		if(fps === undefined) {
 			fps = 60;
 		}
+		if(this._intervalId !== undefined) this.stop();
 		this._intervalId = setInterval(function() {self.run.call(self)}, (1000/fps));
 	},
 	
