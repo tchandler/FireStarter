@@ -7,12 +7,12 @@ function FireStarter(gridConfig) {
 	if(gridConfig === undefined) {
 		this.gridConfig = {
 			blockSize: {
-				x: 40,
-				y: 40
+				x: 50,
+				y: 50
 			},
 			gridSize: {
-				x: 20,
-				y: 20
+				x: 10,
+				y: 10
 			}
 		};
 	}
@@ -47,7 +47,7 @@ FireStarter.prototype = {
 		for(; x < this.gridConfig.gridSize.x; x += 1) {
 			this.grid[x] = new Array(this.gridConfig.gridSize.y);
 			for(; y < this.gridConfig.gridSize.y; y += 1) {
-				var block = new FireStarterBlock(x, y, null, this);
+				var block = new FireStarterBlock(x, y, this);
 				block.changeState(Math.round(Math.random()));
 				block.drawPosition = {
 					x: (x * blockSize.x) + (blockSize.x / 2),
@@ -134,7 +134,8 @@ FireStarter.prototype = {
 			if((adjacentBlock.state === BlockStates.flammable)) {
 				adjacentBlock.increaseTemperature(0.7 + rand);
 				if(isFireGoingToSpread) {
-					adjacentBlock.changeState(BlockStates.fire);
+					BSM.changeState.call(adjacentBlock, BlockStates.fire)
+					//adjacentBlock.changeState(BlockStates.fire);
 				}
 				
 			}
@@ -147,6 +148,7 @@ FireStarter.prototype = {
 			fps = 60;
 		}
 		if(this._intervalId !== undefined) this.stop();
+		this.inputHandler.inputQueue = [];
 		this._intervalId = setInterval(function() {self.run.call(self)}, (1000/fps));
 	},
 	
