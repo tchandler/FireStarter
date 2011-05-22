@@ -8,6 +8,8 @@ function FireStarterInput(fsObj) {
 	var self = this;
 	//this.fsObj.canvas.addEventListener("click", self.onMouseClick.call(self), false);
 	this.fsObj.canvas.addEventListener("click", function(e) { self.onMouseClick.call(self, e); }, false);	
+	this.fsObj.canvas.addEventListener("mousedown", function(e) { self.onMouseDown.call(self, e); }, false);
+	this.fsObj.canvas.addEventListener("mouseup", function(e) { self.onMouseUp.call(self, e); }, false);	
 };
 
 FireStarterInput.prototype = {
@@ -22,6 +24,24 @@ FireStarterInput.prototype = {
 			var block = this.getClickedBlock(e);	
 			this.inputQueue.push( {
 				callback: block.clicked,
+				arg: null,
+				scope: block }	);
+		}
+	},
+	onMouseDown: function(e) {
+		if(e !== undefined) {
+			var block = this.getClickedBlock(e);	
+			this.inputQueue.push( {
+				callback: block.mousedown,
+				arg: null,
+				scope: block }	);
+		}
+	},
+	onMouseUp: function(e) {
+		if(e !== undefined) {
+			var block = this.getClickedBlock(e);	
+			this.inputQueue.push( {
+				callback: block.mouseup,
 				arg: null,
 				scope: block }	);
 		}

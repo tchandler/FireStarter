@@ -48,13 +48,14 @@ FireStarter.prototype = {
 			this.grid[x] = new Array(this.gridConfig.gridSize.y);
 			for(; y < this.gridConfig.gridSize.y; y += 1) {
 				var block = new FireStarterBlock(x, y, this);
-				block.changeState(Math.round(Math.random()));
+				BSM.changeState.call(block, Math.round(Math.random() * .75));
 				block.drawPosition = {
 					x: (x * blockSize.x) + (blockSize.x / 2),
 					y: (y * blockSize.y) + (blockSize.y / 2) 
 				}
 				this.grid[x][y] = block;
 				block.generateAdjacencyList(this.gridConfig.gridSize.x, this.gridConfig.gridSize.y);
+				BSM.update.call(block);
 			}
 			y = 0;
 		}
@@ -117,15 +118,19 @@ FireStarter.prototype = {
 	updateGrid: function() {
 		for(var x in this.grid) {
 			for(var y in this.grid[x]) {
-					this.grid[x][y].update();
+				this.grid[x][y].update();
 				if(this.grid[x][y].state === BlockStates.fire) {
 					this.spreadFire(this.grid[x][y]);
+				}
+				if(this.grid[x][y].state === BlockStates.flammable) {
+					this.spreadGrowth(this.grid[x][y]);
 				}
 			}
 		}
 	},
 	
 	spreadFire: function(block) {
+		//*
 		var rand, isFireGoingToSpread, adjacentBlock;
 		for (var i=0; i < block.adjacencyList.length; i++) {
 			adjacentBlock = this.grid[block.adjacencyList[i].x][block.adjacencyList[i].y];
@@ -137,9 +142,26 @@ FireStarter.prototype = {
 					BSM.changeState.call(adjacentBlock, BlockStates.fire)
 					//adjacentBlock.changeState(BlockStates.fire);
 				}
-				
+			}
+			if((adjacentBlock.state === BlockStates.empty)) {
+				BSM.changeGrowth.call(adjacentBlock, -0.05);
 			}
 		}
+		//*/
+	},
+	
+	spreadGrowth: function(block) {
+		//*
+		var tempBoost, adjacentBlock;
+		for (var i=0; i < block.adjacencyList.length; i++) {
+			adjacentBlock = this.grid[block.adjacencyList[i].x][block.adjacencyList[i].y];
+			tempBoost = Math.random() * (block.temperature / 100);
+			if((adjacentBlock.state === BlockStates.empty)) {
+				var heatToggle = block.temperature == 0 ? 1 : -1;
+				BSM.changeGrowth.call(adjacentBlock, 0.01 * heatToggle);
+			}
+		}
+		//*/
 	},
 	
 	begin: function(fps) {
