@@ -21,46 +21,69 @@ function FireStarter(gridConfig) {
 	}
 	
 	this.canvasSize = { x: this.gridConfig.gridSize.x * this.gridConfig.blockSize.x,
-						y: this.gridConfig.gridSize.y * this.gridConfig.blockSize.y }
+        y: this.gridConfig.gridSize.y * this.gridConfig.blockSize.y };
 		
 	this.canvas = document.getElementById("firestarter_canvas");
 	this.canvas.width = this.canvasSize.x;
 	this.canvas.height = this.canvasSize.y;
 	this.cc = this.canvas.getContext("2d");
 	this.grid = [];
+    this.blocks = [];
 	this._intervalId;
 	this.inputHandler;
-};
+}
 
 
 //Definitions
 FireStarter.prototype = {
 	init: function() {
 		this.initGridData();	
+        this.initCanvas();
 		this.inputHandler = new FireStarterInput(this);
 	},
 	
-	initGridData: function() {
-		var x = 0, y = 0, content = "*";
-		var blockSize = {x:this.gridConfig.blockSize.x, y:this.gridConfig.blockSize.y};
+    initCanvas: function() {
 		this.cc.font = "12px sans-serif";
-		for(; x < this.gridConfig.gridSize.x; x += 1) {
-			this.grid[x] = new Array(this.gridConfig.gridSize.y);
-			for(; y < this.gridConfig.gridSize.y; y += 1) {
-				var block = new FireStarterBlock(x, y, this);
-				BSM.changeState.call(block, Math.round(Math.random() * .75));
-				block.drawPosition = {
-					x: (x * blockSize.x) + (blockSize.x / 2),
-					y: (y * blockSize.y) + (blockSize.y / 2) 
-				}
-				this.grid[x][y] = block;
-				block.generateAdjacencyList(this.gridConfig.gridSize.x, this.gridConfig.gridSize.y);
-				BSM.update.call(block);
+    },
+
+	initGridData: function() {
+        var maxX = this.gridConfig.gridSize.x,
+            maxY = this.gridConfig.gridSize.y,
+            content = "*";
+
+        for(var x = 0; x < maxX; x++, y = 0) {
+			this.grid[x] = new Array(maxY);
+
+            for(var y = 0; y < maxY; y++) {
+                this.createBlock(x, y);
 			}
-			y = 0;
 		}
+        this.buildSubscriberLists();
 	},
-	
+
+    createBlock: function(x, y) {
+        var block = new FireStarterBlock(x, y, this),
+            blockSize = {x:this.gridConfig.blockSize.x, y:this.gridConfig.blockSize.y};
+        BSM.changeState.call(block, Math.round(Math.random() * 0.75));
+        block.drawPosition = {
+            x: (x * blockSize.x) + (blockSize.x / 2),
+            y: (y * blockSize.y) + (blockSize.y / 2) 
+        };
+        this.grid[x][y] = block;
+        this.blocks.push(block);
+        block.generateAdjacencyPositionList(this.gridConfig.gridSize.x, this.gridConfig.gridSize.y);
+        BSM.update.call(block);
+    },
+    buildSubscriberLists: function() {
+        for(var b in this.blocks) {
+            var al = this.blocks[b].adjacencyList;
+            for(var a in al) {
+                var ab = al[a];
+                this.blocks[b].addSubscriber(this.grid[ab.x][ab.y]);
+            }
+        }
+    },
+
 	drawBlock: function(block) {
 		block.draw(this.cc);
 	},
@@ -120,7 +143,8 @@ FireStarter.prototype = {
 			for(var y in this.grid[x]) {
 				this.grid[x][y].update();
 				if(this.grid[x][y].state === BlockStates.fire) {
-					this.spreadFire(this.grid[x][y]);
+                    this.grid[x][y].triggerFireEvent();
+					//this.spreadFire(this.grid[x][y]);
 				}
 				if(this.grid[x][y].state === BlockStates.flammable) {
 					this.spreadGrowth(this.grid[x][y]);
@@ -130,26 +154,7 @@ FireStarter.prototype = {
 	},
 	
 	spreadFire: function(block) {
-		//*
-		var rand, isFireGoingToSpread, adjacentBlock;
-		for (var i=0; i < block.adjacencyList.length; i++) {
-			adjacentBlock = this.grid[block.adjacencyList[i].x][block.adjacencyList[i].y];
-			rand = Math.random() * 0.501;
-			isFireGoingToSpread = Boolean(Math.round(rand));
-			if((adjacentBlock.state === BlockStates.flammable)) {
-				adjacentBlock.increaseTemperature(0.7 + rand);
-				if(isFireGoingToSpread) {
-					BSM.changeState.call(adjacentBlock, BlockStates.fire)
-					//adjacentBlock.changeState(BlockStates.fire);
-				}
-			}
-			if((adjacentBlock.state === BlockStates.empty)) {
-				BSM.changeGrowth.call(adjacentBlock, -0.05);
-			}
-		}
-		//*/
 	},
-	
 	spreadGrowth: function(block) {
 		//*
 		var tempBoost, adjacentBlock;
@@ -157,7 +162,7 @@ FireStarter.prototype = {
 			adjacentBlock = this.grid[block.adjacencyList[i].x][block.adjacencyList[i].y];
 			tempBoost = Math.random() * (block.temperature / 100);
 			if((adjacentBlock.state === BlockStates.empty)) {
-				var heatToggle = block.temperature == 0 ? 1 : -1;
+				var heatToggle = block.temperature === 0 ? 1 : -1;
 				BSM.changeGrowth.call(adjacentBlock, 0.01 * heatToggle);
 			}
 		}
@@ -171,7 +176,7 @@ FireStarter.prototype = {
 		}
 		if(this._intervalId !== undefined) this.stop();
 		this.inputHandler.inputQueue = [];
-		this._intervalId = setInterval(function() {self.run.call(self)}, (1000/fps));
+        this._intervalId = setInterval(function() {self.run.call(self);}, (1000/fps));
 	},
 	
 	run: function() {
