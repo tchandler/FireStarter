@@ -13,7 +13,8 @@ function FireStarterBlock(x, y, fsObj) {
 		height: fsObj.gridConfig.blockSize.y };
 	this.state = -1;
 	this.adjacencyList = [];
-};
+	this.subscriberList = [];
+}
 
 FireStarterBlock.prototype = {
 	gridPosition: {x:0, y:0},
@@ -27,10 +28,10 @@ FireStarterBlock.prototype = {
 		if(this.state === BlockStates.fire) return "^^";
 		if(this.state === BlockStates.flammable) return this.temperature;
 	},
-	generateAdjacencyList: function(xLimit, yLimit) {
-		var xLimit = xLimit - 1,
-			yLimit = yLimit - 1,
-			x = this.gridPosition.x;
+	generateAdjacencyPositionList: function(_xLimit, _yLimit) {
+		var xLimit = _xLimit - 1,
+			yLimit = _yLimit - 1,
+			x = this.gridPosition.x,
 			y = this.gridPosition.y,
 			upLeft = { x: x-1, y: y-1 },
 			up = { x: x, y: y-1 },
@@ -50,6 +51,34 @@ FireStarterBlock.prototype = {
 		if(x !== 0) this.adjacencyList.push(left);
 		if(x !== 0 && y !==0) this.adjacencyList.push(upLeft);
 	},
+    addSubscriber: function(block) {
+        for(var b in this.subscriberList) {
+            if(this.subscriberList[b] === block) {
+                return false;
+            }
+        }
+        this.subscriberList.push(block);
+        return true;
+    },
+    triggerFireEvent: function() {
+        for(var b in this.subscriberList) {
+            this.subscriberList[b].receiveFireEvent(this);
+        }
+    },
+    receiveFireEvent: function(block) {
+        var adjacentBlock = block,
+            rand = Math.random() * 0.501,
+            isFireGoingToSpread = Boolean(Math.round(rand));
+        if(this.state === BlockStates.flammable) {
+            this.increaseTemperature(0.7 + rand);
+            if(isFireGoingToSpread) {
+                BSM.changeState.call(this, BlockStates.fire);
+            }
+        }
+        if(this.state === BlockStates.empty) {
+            BSM.changeGrowth.call(this, -0.05);
+        }
+    },
 	increaseTemperature: function(amount) {
 		this.temperature += amount;
 		if(this.temperature < 0) this.temperature = 0;
@@ -61,49 +90,9 @@ FireStarterBlock.prototype = {
 	//Go Go Developer Animations!
 	draw: function(cc) {
 		BDM.draw.call(this, cc);
-		/*
-		if(this.state == BlockStates.flammable) {
-			var tempPercent = this.temperature / this.fireTemperature;
-			var colorGradient = cc.createLinearGradient(this.x, this.y + this.drawDimension.height, this.x , this.y);
-			colorGradient.addColorStop(0, "red");
-			colorGradient.addColorStop((tempPercent), "green");
-			cc.fillStyle = colorGradient;
-		}
-		
-		if(this.state == BlockStates.fire) {
-			var tempPercent = this.fireLife / this.fireTemperature;
-			tempPercent = tempPercent < 1 ? tempPercent : 1;
-			var colorGradient = cc.createLinearGradient(this.x, this.y  + this.drawDimension.height, this.x , this.y);
-			colorGradient.addColorStop(0, "red");
-			colorGradient.addColorStop(tempPercent, "orange");
-			if(tempPercent < .75) colorGradient.addColorStop(.25 + tempPercent, "yellow");
-			if(tempPercent < .5) colorGradient.addColorStop(.5 + tempPercent, "#8E6B23");
-			if(tempPercent < .25) colorGradient.addColorStop(.75 + tempPercent, "#5C3317");
-			cc.fillStyle = colorGradient;
-		}
-		
-		if(this.state == BlockStates.empty) {
-			cc.fillStyle = "#5C3317";
-		}
-		
-		cc.fillRect(this.x, this.y, this.drawDimension.width, this.drawDimension.height);
-		//*/
 	},
 	update: function() {
 		BSM.update.call(this);
-		/* Remove internal state flange!
-		if(this.state === BlockStates.fire) {
-			if(this.fireLife > 0) this.fireLife -= this.fireDecay;
-			if(this.fireLife <= 0) {
-				console.log("the fire went out");
-				this.changeState(BlockStates.empty);
-			}
-		}
-		if(this.state === BlockStates.flammable) {
-			this.increaseTemperature(-0.1);
-			this.content = this.temperature;
-		}
-		//*/
 	},
 	
 	clicked: function() {
